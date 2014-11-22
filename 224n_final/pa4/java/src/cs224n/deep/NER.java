@@ -25,9 +25,12 @@ public class NER {
 	// initialize model 
 	WindowModel model = new WindowModel(5, 100,0.001);
 	model.initWeights();
-	
+
 	//Baseline
-	model.baseLineTrain(trainData);
-	model.baseLineTest(testData);
+	model.train(trainData);
+	// model.baseLineTrain(trainData);
+	// model.baseLineTest(testData);
+    
+
     }
 }
