@@ -27,7 +27,7 @@ public class NER {
 	model.initWeights();
 	
 	//Baseline
-	// model.baseLineTrain(trainData);
-	// model.baseLineTest(testData);
+	model.baseLineTrain(trainData);
+	model.baseLineTest(testData);
     }
 }

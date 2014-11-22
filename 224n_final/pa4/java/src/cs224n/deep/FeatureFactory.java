@@ -57,7 +57,6 @@ public class FeatureFactory {
 		if (allVecs!=null) return allVecs;
 
 		allVecs = new SimpleMatrix(DIMENSIONALITY, wordToNum.keySet().size());
-		System.out.println(wordToNum.keySet().size());
 
 		BufferedReader br = new BufferedReader(new FileReader(vecFilename));
 		String line;
