@@ -8,7 +8,8 @@ import org.ejml.simple.*;
 
 
 public class FeatureFactory {
-
+	private static final String START_TOKEN = "<s>";
+	private static final String END_TOKEN = "</s>";
 
 	private FeatureFactory() {
 
@@ -18,7 +19,7 @@ public class FeatureFactory {
 	static List<Datum> trainData;
 	/** Do not modify this method **/
 	public static List<Datum> readTrainData(String filename) throws IOException {
-		if (trainData==null) trainData= read(filename);
+		if (trainData==null) trainData = read(filename);
 		return trainData;
 	}
 	
@@ -31,21 +32,26 @@ public class FeatureFactory {
 	
 	private static List<Datum> read(String filename)
 	throws FileNotFoundException, IOException {
-	    // TODO: you'd want to handle sentence boundaries
 		List<Datum> data = new ArrayList<Datum>();
 		BufferedReader in = new BufferedReader(new FileReader(filename));
+		Datum datum = new Datum(START_TOKEN, "O");
+		data.add(datum);	
 		for (String line = in.readLine(); line != null; line = in.readLine()) {
 			if (line.trim().length() == 0) {
+				datum = new Datum(END_TOKEN, "O");
+				data.add(datum);	
+				datum = new Datum(START_TOKEN, "O");
+				data.add(datum);	
 				continue;
 			}
 			String[] bits = line.split("\\s+");
 			String word = bits[0];
 			String label = bits[1];
 
-			Datum datum = new Datum(word, label);
+			datum = new Datum(word, label);
 			data.add(datum);
 		}
-
+		data.remove(data.size() - 1);
 		return data;
 	}
 

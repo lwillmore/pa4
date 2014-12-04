@@ -31,6 +31,5 @@ public class NER {
 	// model.baseLineTrain(trainData);
 	// model.baseLineTest(testData);
     
-
     }
 }
