@@ -14,39 +14,43 @@ public class WindowModel {
 	public int windowSize,wordSize, hiddenSize;
 
 	public WindowModel(int _windowSize, int _hiddenSize, double _lr){
-		//TODO
+		WINDOW_SIZE = _windowSize;
+		HIDDEN_ELEMENTS = _hiddenSize;
+		alpha = _lr; //Learning Rate
 	}
 	
-	public static final int H = 100; //Hidden Layer elements
+	public static int HIDDEN_ELEMENTS;
 	public static int C_N;
+	public static int WINDOW_SIZE;
+
 	public static final int NUM_FEATURES = 5;
 	public static final int N = 50;
 
-	public static final double alpha = 0.001;
+	public static double alpha;
 	public static final double epsilon = Math.pow(10, -4);
-	public static final int WINDOW_SIZE = 3;
+	
 
 	public void initWeights(){
 		// initialize with bias inside as the last column
 		C_N = N * WINDOW_SIZE;
 		double fanIn = C_N;
-		double fanOut = H;
+		double fanOut = HIDDEN_ELEMENTS;
 		double epsilon = Math.sqrt(6) / Math.sqrt(fanIn + fanOut);
 
 		Random rand = new Random();
-		W = SimpleMatrix.random(H, C_N + 1, -1 * epsilon, epsilon, rand);
-		U = new SimpleMatrix(NUM_FEATURES, H + 1);
+		W = SimpleMatrix.random(HIDDEN_ELEMENTS, C_N + 1, -1 * epsilon, epsilon, rand);
+		U = new SimpleMatrix(NUM_FEATURES, HIDDEN_ELEMENTS + 1);
 	}
 
 	public void feedForwardAndBackward(SimpleMatrix newX, SimpleMatrix labelVector, List<Integer> wordListIndex){
 		//Forward Propagation
 		SimpleMatrix m = W.mult(newX);
-		SimpleMatrix newM = new SimpleMatrix(H + 1, 1);
+		SimpleMatrix newM = new SimpleMatrix(HIDDEN_ELEMENTS + 1, 1);
 		
-		for (int i = 0; i < H; i++){
+		for (int i = 0; i < HIDDEN_ELEMENTS; i++){
 			newM.set(i, 0, Math.tanh(m.get(i, 0)));
 		}
-		newM.set(H, 0, 1);
+		newM.set(HIDDEN_ELEMENTS, 0, 1);
 
 		SimpleMatrix finalMatrix = U.mult(newM);
 		SimpleMatrix sigmoid = SoftMaxScore(finalMatrix);
@@ -147,12 +151,12 @@ public class WindowModel {
 	public SimpleMatrix gradientHelper(SimpleMatrix newX, SimpleMatrix tempU, SimpleMatrix tempW, SimpleMatrix labelVector){
 		//Forward Propagation
 		SimpleMatrix m = tempW.mult(newX);
-		SimpleMatrix newM = new SimpleMatrix(H + 1, 1);
+		SimpleMatrix newM = new SimpleMatrix(HIDDEN_ELEMENTS + 1, 1);
 		
-		for (int i = 0; i < H; i++){
+		for (int i = 0; i < HIDDEN_ELEMENTS; i++){
 			newM.set(i, 0, Math.tanh(m.get(i, 0)));
 		}
-		newM.set(H, 0, 1);
+		newM.set(HIDDEN_ELEMENTS, 0, 1);
 
 		SimpleMatrix finalMatrix = SoftMaxScoreWithLog(tempU.mult(newM));
 		return labelVector.transpose().mult(finalMatrix);
@@ -164,12 +168,12 @@ public class WindowModel {
 	public SimpleMatrix predict(SimpleMatrix newX){
 		//Forward Propagation
 		SimpleMatrix m = W.mult(newX);
-		SimpleMatrix newM = new SimpleMatrix(H + 1, 1);
+		SimpleMatrix newM = new SimpleMatrix(HIDDEN_ELEMENTS + 1, 1);
 		
-		for (int i = 0; i < H; i++){
+		for (int i = 0; i < HIDDEN_ELEMENTS; i++){
 			newM.set(i, 0, Math.tanh(m.get(i, 0)));
 		}
-		newM.set(H, 0, 1);
+		newM.set(HIDDEN_ELEMENTS, 0, 1);
 
 		SimpleMatrix finalMatrix = U.mult(newM);
 		return SoftMaxScore(finalMatrix);
@@ -211,13 +215,13 @@ public class WindowModel {
 	public SimpleMatrix gradientW(SimpleMatrix p, SimpleMatrix h, SimpleMatrix x, SimpleMatrix m, SimpleMatrix labelVector){
 		SimpleMatrix a = U.extractMatrix(0, NUM_FEATURES, 0, U.numCols() - 1).transpose().mult(p.minus(labelVector));
 
-		SimpleMatrix b = new SimpleMatrix(H, 1);
+		SimpleMatrix b = new SimpleMatrix(HIDDEN_ELEMENTS, 1);
 		
 		for (int i = 0; i < a.numRows() - 1; i++){
 			double temp = 1 - Math.pow(Math.tanh(m.get(i, 0)), 2);
 			b.set(i, 0, temp);
 		}
-		SimpleMatrix finalMatrix = new SimpleMatrix(H, 1);
+		SimpleMatrix finalMatrix = new SimpleMatrix(HIDDEN_ELEMENTS, 1);
 		
 		//Element-wise multiplication
 		for (int i = 0; i < a.numRows(); i++){
@@ -230,7 +234,7 @@ public class WindowModel {
 	//TODO: Confirm this is correct
 	public SimpleMatrix updateL(SimpleMatrix p, SimpleMatrix h, SimpleMatrix m, SimpleMatrix labelVector){
 		SimpleMatrix a = U.transpose().mult(p.minus(labelVector));
-		SimpleMatrix b = new SimpleMatrix(H+1, 1);
+		SimpleMatrix b = new SimpleMatrix(HIDDEN_ELEMENTS+1, 1);
 		
 		for (int i = 0; i < a.numRows() - 1; i++){
 			double temp = 1 - Math.pow(Math.tanh(m.get(i, 0)), 2);
@@ -240,7 +244,7 @@ public class WindowModel {
 		double temp = 1 - Math.pow(Math.tanh(1), 2);
 		b.set(a.numRows()-1, 0, temp);
 
-		SimpleMatrix finalMatrix = new SimpleMatrix(H+1, 1);
+		SimpleMatrix finalMatrix = new SimpleMatrix(HIDDEN_ELEMENTS+1, 1);
 		//Element-wise multiplication
 		for (int i = 0; i < a.numRows(); i++){
 			finalMatrix.set(a.get(i, 0) * b.get(i, 0));
