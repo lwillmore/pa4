@@ -29,7 +29,9 @@ public class FeatureFactory {
 		if (testData==null) testData= read(filename);
 		return testData;
 	}
-	
+
+
+	//Method modified to include sentence boundaries
 	private static List<Datum> read(String filename)
 	throws FileNotFoundException, IOException {
 		List<Datum> data = new ArrayList<Datum>();
@@ -86,8 +88,8 @@ public class FeatureFactory {
 		String line;
 		int count = 0;
 		while ((line = br.readLine()) != null) {
-			wordToNum.put(line, count);
-			numToWord.put(count, line);
+			wordToNum.put(line.toLowerCase(), count);
+			numToWord.put(count, line.toLowerCase());
 			count ++;
 		}
 		return wordToNum;

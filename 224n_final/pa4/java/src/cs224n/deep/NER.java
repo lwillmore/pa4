@@ -28,6 +28,7 @@ public class NER {
 
 	//Baseline
 	model.train(trainData);
+	model.test(testData);
 	// model.baseLineTrain(trainData);
 	// model.baseLineTest(testData);
     
