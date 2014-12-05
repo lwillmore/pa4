@@ -23,6 +23,7 @@ public class WindowModel {
 	public static final int N = 50;
 
 	public static final double alpha = 0.001;
+	public static final double epsilon = Math.pow(10, -4);
 	public static final int WINDOW_SIZE = 3;
 
 	public void initWeights(){
@@ -51,26 +52,113 @@ public class WindowModel {
 		SimpleMatrix sigmoid = SoftMaxScore(finalMatrix);
 
 		//Back propagation
-		SimpleMatrix newU = updateU(sigmoid, newM, labelVector);
-		SimpleMatrix newW = updateW(sigmoid, newM, newX, m, labelVector);
-		SimpleMatrix newL = updateL(sigmoid, newM, m, labelVector);
+		SimpleMatrix gradU = gradientU(sigmoid, newM, labelVector);
+		SimpleMatrix gradW = gradientW(sigmoid, newM, newX, m, labelVector);
+		SimpleMatrix gradL = updateL(finalMatrix, newM, m, labelVector);
 
-		U = U.minus(newU);
-		W = W.minus(newW);
+		// gradientCheckU(gradU, newX, labelVector);
+		gradientCheckW(gradW, newX, labelVector);
+
+		U = U.minus(gradU.scale(alpha));
+		W = W.minus(gradW.scale(alpha));
 
 		//Update L
 		for (int i = 0; i < wordListIndex.size(); i++){
 			int column = wordListIndex.get(i);
-			SimpleMatrix newL_x = newL.extractMatrix(i * N, (i+1) * N, 0, 1);
+			SimpleMatrix gradL_x = gradL.extractMatrix(i * N, (i+1) * N, 0, 1);
 			SimpleMatrix rowVector = FeatureFactory.allVecs.extractVector(false, column);
-			rowVector = rowVector.minus(newL_x);
+			rowVector = rowVector.minus(gradL_x);
 
 			for (int j = 0; j < rowVector.numRows(); j++){
 				FeatureFactory.allVecs.set(j, column, rowVector.get(j, 0));
 			}
 		}
-
 	}
+
+	//Grad Check U
+	public void gradientCheckU(SimpleMatrix gradU, SimpleMatrix newX, SimpleMatrix labelVector){
+		SimpleMatrix left = gradU;
+		
+		int goodCount = 0;
+		int badCount = 0;
+		for (int row = 0; row < U.numRows(); row++){
+			for (int col = 0; col < U.numCols(); col++){
+				SimpleMatrix newUPlus = new SimpleMatrix(U);
+				newUPlus.set(row, col, newUPlus.get(row, col) + epsilon);
+
+				SimpleMatrix newUMinus = new SimpleMatrix(U);
+				newUMinus.set(row, col, newUMinus.get(row, col) - epsilon);
+
+				double plus = gradientHelper(newX, newUPlus, W, labelVector).get(0, 0);
+				double minus = gradientHelper(newX, newUMinus, W, labelVector).get(0, 0);
+
+				double right = (plus - minus) / (2 * epsilon);
+				double num = Math.abs(left.get(row, col) - right);
+
+				if (num > Math.pow(10, -7)){
+					badCount++;
+				}
+				else{
+					goodCount++;
+				}
+			}
+		}
+		System.out.println("GOODCOUNT (Below 10^-7): " + goodCount);
+		System.out.println("BADCOUNT: " + badCount);
+		System.out.println("");
+	}
+
+	//Grad Check W
+	public void gradientCheckW(SimpleMatrix gradW, SimpleMatrix newX, SimpleMatrix labelVector){
+		SimpleMatrix left = gradW;
+		
+		int goodCount = 0;
+		int badCount = 0;
+		for (int row = 0; row < W.numRows(); row++){
+			for (int col = 0; col < W.numCols(); col++){
+				SimpleMatrix newWPlus = new SimpleMatrix(W);
+				newWPlus.set(row, col, newWPlus.get(row, col) + epsilon);
+
+				SimpleMatrix newWMinus = new SimpleMatrix(W);
+				newWMinus.set(row, col, newWMinus.get(row, col) - epsilon);
+
+				double plus = gradientHelper(newX, U, newWPlus, labelVector).get(0, 0);
+				double minus = gradientHelper(newX, U, newWMinus, labelVector).get(0, 0);
+
+				double right = (plus - minus) / (2 * epsilon);
+				double num = Math.abs(left.get(row, col) - right);
+
+				if (num > Math.pow(10, -7)){
+					badCount++;
+				}
+				else{
+					goodCount++;
+				}
+			}
+		}
+		System.out.println("GOODCOUNT (Below 10^-7): " + goodCount);
+		System.out.println("BADCOUNT: " + badCount);
+		System.out.println("");
+	}
+
+
+
+	//Prediction for the gradient check
+	public SimpleMatrix gradientHelper(SimpleMatrix newX, SimpleMatrix tempU, SimpleMatrix tempW, SimpleMatrix labelVector){
+		//Forward Propagation
+		SimpleMatrix m = tempW.mult(newX);
+		SimpleMatrix newM = new SimpleMatrix(H + 1, 1);
+		
+		for (int i = 0; i < H; i++){
+			newM.set(i, 0, Math.tanh(m.get(i, 0)));
+		}
+		newM.set(H, 0, 1);
+
+		SimpleMatrix finalMatrix = SoftMaxScoreWithLog(tempU.mult(newM));
+		return labelVector.transpose().mult(finalMatrix);
+	}
+
+
 
 	//Prediction for testing
 	public SimpleMatrix predict(SimpleMatrix newX){
@@ -87,6 +175,19 @@ public class WindowModel {
 		return SoftMaxScore(finalMatrix);
 	}
 
+	//Calculates softmax score of the matrix V with log
+	public SimpleMatrix SoftMaxScoreWithLog(SimpleMatrix v){
+		double denominator = 0.0;
+		for (int i = 0; i < v.numRows(); i++){
+			denominator += Math.exp(v.get(i,0));
+		}
+		SimpleMatrix g = new SimpleMatrix(v.numRows(), v.numCols());
+		for (int i = 0; i < v.numRows(); i++){
+			g.set(i, 0, -1 * Math.log(Math.exp(v.get(i,0)) / denominator));
+		}
+		return g;
+	}
+
 	//Calculates softmax score of the matrix V
 	public SimpleMatrix SoftMaxScore(SimpleMatrix v){
 		double denominator = 0.0;
@@ -100,12 +201,14 @@ public class WindowModel {
 		return g;
 	}
 
-	public SimpleMatrix updateU(SimpleMatrix p, SimpleMatrix h, SimpleMatrix labelVector){
+	//Calculates the gradient of U
+	public SimpleMatrix gradientU(SimpleMatrix p, SimpleMatrix h, SimpleMatrix labelVector){
 		SimpleMatrix du = (p.minus(labelVector)).mult(h.transpose());
-		return U.minus(du.scale(alpha));
+		return du;
 	}
 
-	public SimpleMatrix updateW(SimpleMatrix p, SimpleMatrix h, SimpleMatrix x, SimpleMatrix m, SimpleMatrix labelVector){
+	//Calculates the gradient of W
+	public SimpleMatrix gradientW(SimpleMatrix p, SimpleMatrix h, SimpleMatrix x, SimpleMatrix m, SimpleMatrix labelVector){
 		SimpleMatrix a = U.extractMatrix(0, NUM_FEATURES, 0, U.numCols() - 1).transpose().mult(p.minus(labelVector));
 
 		SimpleMatrix b = new SimpleMatrix(H, 1);
@@ -115,12 +218,13 @@ public class WindowModel {
 			b.set(i, 0, temp);
 		}
 		SimpleMatrix finalMatrix = new SimpleMatrix(H, 1);
+		
 		//Element-wise multiplication
 		for (int i = 0; i < a.numRows(); i++){
 			finalMatrix.set(a.get(i, 0) * b.get(i, 0));
 		}
 
-		return W.minus(finalMatrix.mult(x.transpose()).scale(alpha));
+		return finalMatrix.mult(x.transpose());
 	}
 
 	//TODO: Confirm this is correct
@@ -172,6 +276,9 @@ public class WindowModel {
 		createDicts();
 		
 		for (int i = WINDOW_SIZE / 2; i < _trainData.size()-(WINDOW_SIZE / 2); i++){
+			//Don't check if beginning or end of sentence
+			if (_trainData.get(i).equals("<s>") || _trainData.get(i).equals("</s>") ) continue;
+			
 			// System.out.println("" + i + " / " + (_trainData.size() - (WINDOW_SIZE / 2)) + "done");
 			SimpleMatrix newX = new SimpleMatrix(C_N + 1, 1);
 			
@@ -261,7 +368,7 @@ public class WindowModel {
 			String correctLabel = testData.get(i).label;
 
 			SimpleMatrix prediction = predict(newX);
-			System.out.println(prediction);
+
 			int highestIndex = -1;
 			double highestScore = -1.0;
 			for (int q = 0; q < prediction.numRows(); q++){
@@ -274,8 +381,6 @@ public class WindowModel {
 			System.out.println(word + "\t" + correctLabel + "\t" + reverseDict.get(highestIndex));
 		}
 	}
-
-
 
 	/*
 	* Baseline Implementaiton
