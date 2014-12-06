@@ -15,7 +15,6 @@ public class FeatureFactory {
 
 	}
 
-
 	static List<Datum> trainData;
 	/** Do not modify this method **/
 	public static List<Datum> readTrainData(String filename) throws IOException {
@@ -79,6 +78,19 @@ public class FeatureFactory {
 		return allVecs;
 	}
 
+	public static void initRandomWordVectors() throws IOException {
+		if (allVecs!=null) return;
+
+		Random rand = new Random();
+
+		double fanIn = WindowModel.C_N;
+		double fanOut = WindowModel.HIDDEN_ELEMENTS;
+		double e = Math.sqrt(6) / Math.sqrt(fanIn + fanOut);
+
+		allVecs = SimpleMatrix.random(DIMENSIONALITY, wordToNum.keySet().size(), -1 * e, e, rand);
+		// System.out.println(allVecs);
+	}
+
 	// might be useful for word to number lookups, just access them directly in WindowModel
 	public static HashMap<String, Integer> wordToNum = new HashMap<String, Integer>(); 
 	public static HashMap<Integer, String> numToWord = new HashMap<Integer, String>();
@@ -90,7 +102,7 @@ public class FeatureFactory {
 		while ((line = br.readLine()) != null) {
 			wordToNum.put(line.toLowerCase(), count);
 			numToWord.put(count, line.toLowerCase());
-			count ++;
+			count++;
 		}
 		return wordToNum;
 	}

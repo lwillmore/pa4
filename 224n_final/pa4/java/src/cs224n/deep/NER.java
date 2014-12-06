@@ -18,13 +18,24 @@ public class NER {
 	List<Datum> testData = FeatureFactory.readTestData(args[1]);	
 	
 	//	read the train and test data
-	//TODO: Implement this function (just reads in vocab and word vectors)
 	FeatureFactory.initializeVocab("../data/vocab.txt");
-	SimpleMatrix allVecs= FeatureFactory.readWordVectors("../data/wordVectors.txt");
+	
+	//Parameters
+	int WINDOW_SIZE = 3;
+	int NUM_ITERATIONS = 5;
+	int HIDDEN_NODES = 100;
+	double LEARNING_RATE = 0.001;
+	boolean REGULARIZE = true;
 
-	// initialize model 
-	WindowModel model = new WindowModel(3, 100,0.001);
+	// Initialize model 
+	WindowModel model = new WindowModel(WINDOW_SIZE, HIDDEN_NODES, LEARNING_RATE, REGULARIZE, NUM_ITERATIONS);
 	model.initWeights();
+
+	//Initialization of Word Vectors, either random or not
+	FeatureFactory.readWordVectors("../data/wordVectors.txt");
+	//FeatureFactory.initRandomWordVectors();
+
+	
 
 	//Baseline
 	// model.baseLineTrain(trainData);

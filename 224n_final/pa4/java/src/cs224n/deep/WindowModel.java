@@ -13,21 +13,27 @@ public class WindowModel {
 	//
 	public int windowSize,wordSize, hiddenSize;
 
-	public WindowModel(int _windowSize, int _hiddenSize, double _lr) {
+	public WindowModel(int _windowSize, int _hiddenSize, double _lr, boolean regularize, int NUM_ITERATIONS) {
 		WINDOW_SIZE = _windowSize;
 		HIDDEN_ELEMENTS = _hiddenSize;
 		alpha = _lr; //Learning Rate
+		this.regularize = regularize;
+		NUM_ITERS = NUM_ITERATIONS;
 	}
 	
 	public static int HIDDEN_ELEMENTS;
 	public static int C_N;
 	public static int WINDOW_SIZE;
+	public static boolean regularize;
+	public static int NUM_ITERS;
 
 	public static final int NUM_FEATURES = 5;
 	public static final int N = 50;
 
+
 	public static double alpha;
 	public static final double epsilon = Math.pow(10, -4);
+	public static final double lambda = 0.00001;
 	
 
 	public void initWeights(){
@@ -40,9 +46,9 @@ public class WindowModel {
 		//Random initialization
 		Random rand = new Random();
 		W = SimpleMatrix.random(HIDDEN_ELEMENTS, C_N, -1 * e, e, rand);
-		U = SimpleMatrix.random(NUM_FEATURES, HIDDEN_ELEMENTS, -1 * e, e, rand);
-		b1 = SimpleMatrix.random(HIDDEN_ELEMENTS, 1, -1 * e, e, rand);
-		b2 = SimpleMatrix.random(NUM_FEATURES, 1, -1 * e, e, rand);
+		U = SimpleMatrix.random(NUM_FEATURES, HIDDEN_ELEMENTS, -1 * e, 1 * e, rand);
+		b1 = new SimpleMatrix(HIDDEN_ELEMENTS, 1);
+		b2 = new SimpleMatrix(NUM_FEATURES, 1);
 	}
 
 	public void feedForwardAndBackward(SimpleMatrix newX, SimpleMatrix labelVector, List<Integer> wordListIndex){
@@ -67,23 +73,22 @@ public class WindowModel {
 		SimpleMatrix gradL = gradientL(sigmoid, newM, labelVector);
 		
 
+		// gradientCheckW(gradW, newX, labelVector);
+		// gradientCheckU(gradU, newX, labelVector);
 		/*
 		//Gradient Checks
 		gradientCheckU(gradU, newX, labelVector);
 		gradientCheckB2(gradb2, newX, labelVector);
-		gradientCheckW(gradW, newX, labelVector); //Not working
+		gradientCheckW(gradW, newX, labelVector); 
 		gradientCheckB1(gradb1, newX, labelVector);
 		gradientCheckL(gradL, newX, labelVector);
 		*/
 		
-
-
 		//Apply Gradients 
 		U = U.minus(gradU.scale(alpha));
 		b2 = b2.minus(gradb2.scale(alpha));
 		W = W.minus(gradW.scale(alpha));
 		b1 = b1.minus(gradb1.scale(alpha));
-
 
 		//Update L
 		for (int i = 0; i < wordListIndex.size(); i++){
@@ -106,7 +111,12 @@ public class WindowModel {
 	//Calculates the gradient of U
 	public SimpleMatrix gradientU(SimpleMatrix p, SimpleMatrix h, SimpleMatrix labelVector){
 		SimpleMatrix du = (p.minus(labelVector)).mult(h.transpose());
-		return du;
+		if (regularize){
+			return du.plus(U.scale(lambda));
+		}
+		else{
+			return du;
+		}
 	}
 
 	//Calculates the gradient of b2
@@ -131,7 +141,12 @@ public class WindowModel {
 			finalMatrix.set(i,0,a.get(i, 0) * b.get(i, 0));
 		}
 
-		return finalMatrix.mult(x.transpose());
+		if (regularize){
+			return finalMatrix.mult(x.transpose()).plus(W.scale(lambda));
+		}
+		else{
+			return finalMatrix.mult(x.transpose());
+		}
 	}
 
 	//Calculates the gradient of B1
@@ -188,8 +203,18 @@ public class WindowModel {
 				SimpleMatrix newUMinus = new SimpleMatrix(U);
 				newUMinus.set(row, col, newUMinus.get(row, col) - epsilon);
 
-				double plus = gradientHelper(newX, newUPlus, W, labelVector, b1, b2).get(0, 0);
-				double minus = gradientHelper(newX, newUMinus, W, labelVector, b1, b2).get(0, 0);
+				double plus = 0.0;
+				double minus = 0.0;
+				if (regularize){
+					plus = gradientHelperRegularized(newX, newUPlus, W, labelVector, b1, b2);
+					minus = gradientHelperRegularized(newX, newUMinus, W, labelVector, b1, b2);
+				}
+				else{
+					plus = gradientHelper(newX, newUPlus, W, labelVector, b1, b2).get(0, 0);
+					minus = gradientHelper(newX, newUMinus, W, labelVector, b1, b2).get(0, 0);
+				}
+
+				
 
 				double right = (plus - minus) / (2 * epsilon);
 				double num = Math.abs(left.get(row, col) - right);
@@ -257,8 +282,16 @@ public class WindowModel {
 				SimpleMatrix newWMinus = new SimpleMatrix(W);
 				newWMinus.set(row, col, newWMinus.get(row, col) - epsilon);
 
-				double plus = gradientHelper(newX, U, newWPlus, labelVector, b1, b2).get(0, 0);
-				double minus = gradientHelper(newX, U, newWMinus, labelVector, b1, b2).get(0, 0);
+				double plus = 0.0;
+				double minus = 0.0;
+				if (regularize){
+					plus = gradientHelperRegularized(newX, U, newWPlus, labelVector, b1, b2);
+					minus = gradientHelperRegularized(newX, U, newWMinus, labelVector, b1, b2);
+				}
+				else{
+					plus = gradientHelper(newX, U, newWPlus, labelVector, b1, b2).get(0, 0);
+					minus = gradientHelper(newX, U, newWMinus, labelVector, b1, b2).get(0, 0);
+				}
 
 				double right = (plus - minus) / (2 * epsilon);
 				double num = Math.abs(left.get(row, col) - right);
@@ -357,6 +390,30 @@ public class WindowModel {
 		return labelVector.transpose().mult(finalMatrix);
 	}
 
+	//Prediction for the gradient check (Regularized)
+	public double gradientHelperRegularized(SimpleMatrix newX, SimpleMatrix tempU, SimpleMatrix tempW, SimpleMatrix labelVector, SimpleMatrix newB1, SimpleMatrix newB2){
+		//Forward Propagation
+		SimpleMatrix m = tempW.mult(newX).plus(newB1);
+		SimpleMatrix newM = new SimpleMatrix(HIDDEN_ELEMENTS, 1);
+		
+		for (int i = 0; i < HIDDEN_ELEMENTS; i++){
+			newM.set(i, 0, Math.tanh(m.get(i, 0)));
+		}
+
+		SimpleMatrix finalMatrix = SoftMaxScoreWithLog(tempU.mult(newM).plus(newB2));
+		return labelVector.transpose().mult(finalMatrix).get(0, 0) + (lambda/2) * (sumSquared(W) + sumSquared(U));
+	}
+
+	public double sumSquared(SimpleMatrix m){
+		double result = 0.0;
+		for (int i = 0; i < m.numRows(); i++){
+			for (int j = 0; j < m.numCols(); j++){
+				result += Math.pow(m.get(i, j), 2);
+			}
+		}
+		return result;
+	}
+
 	//Calculates softmax score of the matrix V with log
 	public SimpleMatrix SoftMaxScoreWithLog(SimpleMatrix v){
 		double denominator = 0.0;
@@ -402,35 +459,36 @@ public class WindowModel {
 
 	//Train method
 	public void train(List<Datum> _trainData){
-		createDicts();
-		
-		for (int i = WINDOW_SIZE / 2; i < _trainData.size()-(WINDOW_SIZE / 2); i++){
-			//Don't use if beginning or end of sentence
-			if (_trainData.get(i).equals("<s>") || _trainData.get(i).equals("</s>") ) continue;
-			
-			// System.out.println("" + i + " / " + (_trainData.size() - (WINDOW_SIZE / 2)) + "done");
-			SimpleMatrix newX = new SimpleMatrix(C_N, 1);
-			
-			int count = 0;
-			List<Integer> wordListIndex = new ArrayList<Integer>();
+		for (int iters = 0; iters < NUM_ITERS; iters++){
+			createDicts();
 
-			int startIndex = i - (WINDOW_SIZE / 2);
-			for (int j = startIndex; j <= i + (WINDOW_SIZE / 2); j++){
-				Datum elem = _trainData.get(j);
-				
+			for (int i = WINDOW_SIZE / 2; i < _trainData.size()-(WINDOW_SIZE / 2); i++){
+			//Don't use if beginning or end of sentence
+				if (_trainData.get(i).equals("<s>") || _trainData.get(i).equals("</s>") ) continue;
+
+			// System.out.println("" + i + " / " + (_trainData.size() - (WINDOW_SIZE / 2)) + "done");
+				SimpleMatrix newX = new SimpleMatrix(C_N, 1);
+
+				int count = 0;
+				List<Integer> wordListIndex = new ArrayList<Integer>();
+
+				int startIndex = i - (WINDOW_SIZE / 2);
+				for (int j = startIndex; j <= i + (WINDOW_SIZE / 2); j++){
+					Datum elem = _trainData.get(j);
+
 				//Get word vector
-				String word = elem.word.toLowerCase();
-				int columnIndex = 0;
-				if (FeatureFactory.wordToNum.keySet().contains(word)){
-					columnIndex = FeatureFactory.wordToNum.get(word);
-				}
-				else{
-					//Word not in vocabulary, but may contain digits
-					word = word.replaceAll("\\d", "DG".toLowerCase());
+					String word = elem.word.toLowerCase();
+					int columnIndex = 0;
 					if (FeatureFactory.wordToNum.keySet().contains(word)){
 						columnIndex = FeatureFactory.wordToNum.get(word);
 					}
 					else{
+					//Word not in vocabulary, but may contain digits
+						word = word.replaceAll("\\d", "DG".toLowerCase());
+						if (FeatureFactory.wordToNum.keySet().contains(word)){
+							columnIndex = FeatureFactory.wordToNum.get(word);
+						}
+						else{
 						//Doesn't contain digits or isn't known with replacement
 						columnIndex = FeatureFactory.wordToNum.get("UUUNKKK".toLowerCase()); //TODO: Check that this works, converting to lower case
 					}
@@ -453,35 +511,36 @@ public class WindowModel {
 			feedForwardAndBackward(newX, labelVector, wordListIndex);
 		}
 	}
-	
-	public void test(List<Datum> testData){
-		for (int i = WINDOW_SIZE / 2; i < testData.size()-(WINDOW_SIZE / 2); i++){
-			//Don't use if beginning or end of sentence
-			if (testData.get(i).equals("<s>") || testData.get(i).equals("</s>") ) continue;
-			
-			// System.out.println("" + i + " / " + (testData.size() - (WINDOW_SIZE / 2)) + "done");
-			SimpleMatrix newX = new SimpleMatrix(C_N, 1);
-			
-			int count = 0;
-			List<Integer> wordListIndex = new ArrayList<Integer>();
+}
 
-			int startIndex = i - (WINDOW_SIZE / 2);
-			for (int j = startIndex; j <= i + (WINDOW_SIZE / 2); j++){
-				Datum elem = testData.get(j);
-				
+public void test(List<Datum> testData){
+	for (int i = WINDOW_SIZE / 2; i < testData.size()-(WINDOW_SIZE / 2); i++){
+			//Don't use if beginning or end of sentence
+		if (testData.get(i).equals("<s>") || testData.get(i).equals("</s>") ) continue;
+
+			// System.out.println("" + i + " / " + (testData.size() - (WINDOW_SIZE / 2)) + "done");
+		SimpleMatrix newX = new SimpleMatrix(C_N, 1);
+
+		int count = 0;
+		List<Integer> wordListIndex = new ArrayList<Integer>();
+
+		int startIndex = i - (WINDOW_SIZE / 2);
+		for (int j = startIndex; j <= i + (WINDOW_SIZE / 2); j++){
+			Datum elem = testData.get(j);
+
 				//Get word vector
-				String word = elem.word.toLowerCase();
-				int columnIndex = 0;
+			String word = elem.word.toLowerCase();
+			int columnIndex = 0;
+			if (FeatureFactory.wordToNum.keySet().contains(word)){
+				columnIndex = FeatureFactory.wordToNum.get(word);
+			}
+			else{
+					//Word not in vocabulary, but may contain digits
+				word = word.replaceAll("\\d", "DG".toLowerCase());
 				if (FeatureFactory.wordToNum.keySet().contains(word)){
 					columnIndex = FeatureFactory.wordToNum.get(word);
 				}
 				else{
-					//Word not in vocabulary, but may contain digits
-					word = word.replaceAll("\\d", "DG".toLowerCase());
-					if (FeatureFactory.wordToNum.keySet().contains(word)){
-						columnIndex = FeatureFactory.wordToNum.get(word);
-					}
-					else{
 						//Doesn't contain digits or isn't known with replacement
 						columnIndex = FeatureFactory.wordToNum.get("UUUNKKK".toLowerCase()); //TODO: Check that this works, converting to lower case
 					}
