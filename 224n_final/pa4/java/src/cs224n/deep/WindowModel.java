@@ -10,8 +10,16 @@ import java.text.*;
 
 public class WindowModel {
 	protected SimpleMatrix L, W, U, b1, b2;
-	//
-	public int windowSize,wordSize, hiddenSize;
+	public static int HIDDEN_ELEMENTS;
+	public static int C_N;
+	public static int WINDOW_SIZE;
+	public static boolean regularize = false;
+	public static int NUM_ITERS;
+	public static final int NUM_FEATURES = 5;
+	public static final int N = 50;
+	public static double alpha;
+	public static final double epsilon = Math.pow(10, -4);
+	public static double lambda = 0.0;
 
 	public WindowModel(int _windowSize, int _hiddenSize, double _lr, double regularize, int NUM_ITERATIONS) {
 		WINDOW_SIZE = _windowSize;
@@ -24,21 +32,6 @@ public class WindowModel {
 		NUM_ITERS = NUM_ITERATIONS;
 	}
 	
-	public static int HIDDEN_ELEMENTS;
-	public static int C_N;
-	public static int WINDOW_SIZE;
-	public static boolean regularize = false;
-	public static int NUM_ITERS;
-
-	public static final int NUM_FEATURES = 5;
-	public static final int N = 50;
-
-
-	public static double alpha;
-	public static final double epsilon = Math.pow(10, -4);
-	public static double lambda = 0.0;
-	
-
 	public void initWeights(){
 		// initialize with bias inside as the last column
 		C_N = N * WINDOW_SIZE;
@@ -211,8 +204,6 @@ public class WindowModel {
 					plus = gradientHelper(newX, newUPlus, W, labelVector, b1, b2).get(0, 0);
 					minus = gradientHelper(newX, newUMinus, W, labelVector, b1, b2).get(0, 0);
 				}
-
-				
 
 				double right = (plus - minus) / (2 * epsilon);
 				double num = Math.abs(left.get(row, col) - right);
@@ -402,6 +393,7 @@ public class WindowModel {
 		return labelVector.transpose().mult(finalMatrix).get(0, 0) + (lambda/2) * (sumSquared(W) + sumSquared(U));
 	}
 
+	//Sums elements^2 of a matrix
 	public double sumSquared(SimpleMatrix m){
 		double result = 0.0;
 		for (int i = 0; i < m.numRows(); i++){
@@ -510,7 +502,6 @@ public class WindowModel {
 		}
 	}
 }
-
 public void test(List<Datum> testData){
 	for (int i = WINDOW_SIZE / 2; i < testData.size()-(WINDOW_SIZE / 2); i++){
 			//Don't use if beginning or end of sentence
@@ -614,13 +605,13 @@ public void test(List<Datum> testData){
 			}
 		}
 	}
+
 	public void baseLineTest(List<Datum> testData){
 		for (Datum d : testData){
 			String word = d.word;
 			String label = d.label;
 			if(baseLineMap.keySet().contains(d.word)){
 				//Object has been seen
-
 				Set<String> nerTags = baseLineMap.get(d.word).keySet();
 				int largest = -1;
 				String finalTag = "";
@@ -637,6 +628,5 @@ public void test(List<Datum> testData){
 				System.out.println(word + "\t" + label + "\t" + "O");
 			}
 		}
-
 	}
 }
