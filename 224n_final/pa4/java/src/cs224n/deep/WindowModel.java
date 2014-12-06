@@ -13,18 +13,21 @@ public class WindowModel {
 	//
 	public int windowSize,wordSize, hiddenSize;
 
-	public WindowModel(int _windowSize, int _hiddenSize, double _lr, boolean regularize, int NUM_ITERATIONS) {
+	public WindowModel(int _windowSize, int _hiddenSize, double _lr, double regularize, int NUM_ITERATIONS) {
 		WINDOW_SIZE = _windowSize;
 		HIDDEN_ELEMENTS = _hiddenSize;
 		alpha = _lr; //Learning Rate
-		this.regularize = regularize;
+		if (regularize > 0.0){
+			this.regularize = true;
+			lambda = regularize;
+		}
 		NUM_ITERS = NUM_ITERATIONS;
 	}
 	
 	public static int HIDDEN_ELEMENTS;
 	public static int C_N;
 	public static int WINDOW_SIZE;
-	public static boolean regularize;
+	public static boolean regularize = false;
 	public static int NUM_ITERS;
 
 	public static final int NUM_FEATURES = 5;
@@ -33,7 +36,7 @@ public class WindowModel {
 
 	public static double alpha;
 	public static final double epsilon = Math.pow(10, -4);
-	public static final double lambda = 0.00001;
+	public static double lambda = 0.0;
 	
 
 	public void initWeights(){
@@ -72,17 +75,12 @@ public class WindowModel {
 		SimpleMatrix gradb1 = gradientB1(sigmoid, m, labelVector);
 		SimpleMatrix gradL = gradientL(sigmoid, newM, labelVector);
 		
-
-		// gradientCheckW(gradW, newX, labelVector);
-		// gradientCheckU(gradU, newX, labelVector);
-		/*
 		//Gradient Checks
-		gradientCheckU(gradU, newX, labelVector);
-		gradientCheckB2(gradb2, newX, labelVector);
-		gradientCheckW(gradW, newX, labelVector); 
-		gradientCheckB1(gradb1, newX, labelVector);
-		gradientCheckL(gradL, newX, labelVector);
-		*/
+		// gradientCheckU(gradU, newX, labelVector);
+		// gradientCheckB2(gradb2, newX, labelVector);
+		// gradientCheckW(gradW, newX, labelVector); 
+		// gradientCheckB1(gradb1, newX, labelVector);
+		// gradientCheckL(gradL, newX, labelVector);
 		
 		//Apply Gradients 
 		U = U.minus(gradU.scale(alpha));
@@ -501,14 +499,14 @@ public class WindowModel {
 					newX.set(count, 0, a.get(x, 0));
 					count++;
 				}
+
+				//Get correct label
+				SimpleMatrix labelVector = new SimpleMatrix(NUM_FEATURES, 1);
+				String label = _trainData.get(i).label;
+				labelVector.set(dict.get(label), 0, 1);
+
+				feedForwardAndBackward(newX, labelVector, wordListIndex);
 			}
-
-			//Get correct label
-			SimpleMatrix labelVector = new SimpleMatrix(NUM_FEATURES, 1);
-			String label = _trainData.get(i).label;
-			labelVector.set(dict.get(label), 0, 1);
-
-			feedForwardAndBackward(newX, labelVector, wordListIndex);
 		}
 	}
 }
