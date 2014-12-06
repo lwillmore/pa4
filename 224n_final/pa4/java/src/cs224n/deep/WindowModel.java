@@ -13,7 +13,7 @@ public class WindowModel {
 	//
 	public int windowSize,wordSize, hiddenSize;
 
-	public WindowModel(int _windowSize, int _hiddenSize, double _lr){
+	public WindowModel(int _windowSize, int _hiddenSize, double _lr) {
 		WINDOW_SIZE = _windowSize;
 		HIDDEN_ELEMENTS = _hiddenSize;
 		alpha = _lr; //Learning Rate
@@ -62,22 +62,22 @@ public class WindowModel {
 		SimpleMatrix gradb2 = gradientB2(sigmoid, labelVector);
 		
 
-		SimpleMatrix gradW = gradientW(sigmoid, newX, m, labelVector);
+		SimpleMatrix gradW = gradientW(sigmoid, newX, newM, labelVector);
 		SimpleMatrix gradb1 = gradientB1(sigmoid, m, labelVector);
 		// SimpleMatrix gradL = gradientL(finalMatrix, newM, m, labelVector);
 		
 
 
-		// gradientCheckU(gradU, newX, labelVector);
+		//gradientCheckU(gradU, newX, labelVector);
 		// gradientCheckB2(gradb2, newX, labelVector);
-		// gradientCheckW(gradW, newX, labelVector); //Not working
-		gradientCheckB1(gradb1, newX, labelVector);
+		 gradientCheckW(gradW, newX, labelVector); //Not working
+		//gradientCheckB1(gradb1, newX, labelVector);
 
 		//Apply Gradients 
 		// U = U.minus(gradU.scale(alpha));
-		// b2 = b2.minus(gradb2.scale(alpha));
-		// W = W.minus(gradW.scale(alpha));
-		b1 = b1.minus(gradb1.scale(alpha));
+		//b2 = b2.minus(gradb2.scale(alpha));
+		 W = W.minus(gradW.scale(alpha));
+		//b1 = b1.minus(gradb1.scale(alpha));
 
 
 
@@ -115,19 +115,19 @@ public class WindowModel {
 	}
 
 	//Calculates the gradient of W
-	public SimpleMatrix gradientW(SimpleMatrix p, SimpleMatrix x, SimpleMatrix m, SimpleMatrix labelVector){
+	public SimpleMatrix gradientW(SimpleMatrix p, SimpleMatrix x, SimpleMatrix newM, SimpleMatrix labelVector){
 		SimpleMatrix a = U.transpose().mult(p.minus(labelVector));
 		SimpleMatrix b = new SimpleMatrix(HIDDEN_ELEMENTS, 1);
 		
 		for (int i = 0; i < a.numRows(); i++){
-			double temp = 1 - Math.pow(Math.tanh(m.get(i, 0)), 2);
+			double temp = 1 - Math.pow(newM.get(i,0),2);
 			b.set(i, 0, temp);
 		}
 		SimpleMatrix finalMatrix = new SimpleMatrix(HIDDEN_ELEMENTS, 1);
 		
 		//Element-wise multiplication
 		for (int i = 0; i < a.numRows(); i++){
-			finalMatrix.set(a.get(i, 0) * b.get(i, 0));
+			finalMatrix.set(i,0,a.get(i, 0) * b.get(i, 0));
 		}
 
 		return finalMatrix.mult(x.transpose());
@@ -146,7 +146,7 @@ public class WindowModel {
 		
 		//Element-wise multiplication
 		for (int i = 0; i < a.numRows(); i++){
-			finalMatrix.set(a.get(i, 0) * b.get(i, 0));
+			finalMatrix.set(i,0,a.get(i, 0) * b.get(i, 0));
 		}
 		return finalMatrix;
 	}
@@ -206,6 +206,7 @@ public class WindowModel {
 				}
 			}
 		}
+		System.out.println("U");
 		System.out.println("GOODCOUNT (Below 10^-7): " + goodCount);
 		System.out.println("BADCOUNT: " + badCount);
 		System.out.println("");
@@ -240,6 +241,7 @@ public class WindowModel {
 				}
 			}
 		}
+		System.out.println("B2");
 		System.out.println("GOODCOUNT (Below 10^-7): " + goodCount);
 		System.out.println("BADCOUNT: " + badCount);
 		System.out.println("");
@@ -273,6 +275,7 @@ public class WindowModel {
 				}
 			}
 		}
+		System.out.println("W");
 		System.out.println("GOODCOUNT (Below 10^-7): " + goodCount);
 		System.out.println("BADCOUNT: " + badCount);
 		System.out.println("");
@@ -305,6 +308,7 @@ public class WindowModel {
 				}
 			}
 		}
+		System.out.println("B1");
 		System.out.println("GOODCOUNT (Below 10^-7): " + goodCount);
 		System.out.println("BADCOUNT: " + badCount);
 		System.out.println("");
