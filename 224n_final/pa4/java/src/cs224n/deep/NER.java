@@ -14,7 +14,7 @@ public class NER {
 	}	    
 
 	// this reads in the train and test datasets
-	List<Datum> trainData = FeatureFactory.readTrainData(args[0]).subList(0, 10);
+	List<Datum> trainData = FeatureFactory.readTrainData(args[0]);
 	List<Datum> testData = FeatureFactory.readTestData(args[1]);	
 	
 	//	read the train and test data
@@ -27,10 +27,11 @@ public class NER {
 	model.initWeights();
 
 	//Baseline
-	model.train(trainData);
-	// model.test(testData);
 	// model.baseLineTrain(trainData);
 	// model.baseLineTest(testData);
-    
+	
+	//Regular
+	model.train(trainData);
+	model.test(testData);
     }
 }
