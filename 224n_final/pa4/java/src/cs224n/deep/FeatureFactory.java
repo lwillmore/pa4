@@ -35,14 +35,22 @@ public class FeatureFactory {
 	throws FileNotFoundException, IOException {
 		List<Datum> data = new ArrayList<Datum>();
 		BufferedReader in = new BufferedReader(new FileReader(filename));
-		Datum datum = new Datum(START_TOKEN, "O");
-		data.add(datum);	
+		
+		for (int i = 0; i <(WindowModel.WINDOW_SIZE/2); i++){
+			Datum datum = new Datum(START_TOKEN, "O");
+			data.add(datum);
+		}
+		
 		for (String line = in.readLine(); line != null; line = in.readLine()) {
 			if (line.trim().length() == 0) {
-				datum = new Datum(END_TOKEN, "O");
-				data.add(datum);	
-				datum = new Datum(START_TOKEN, "O");
-				data.add(datum);	
+				for (int i = 0; i <(WindowModel.WINDOW_SIZE/2); i++){
+					Datum datum = new Datum(END_TOKEN, "O");
+					data.add(datum);
+				}	
+				for (int i = 0; i <(WindowModel.WINDOW_SIZE/2); i++){
+					Datum datum = new Datum(START_TOKEN, "O");
+					data.add(datum);
+				}
 				continue;
 			}
 			String[] bits = line.split("\\s+");
@@ -88,7 +96,6 @@ public class FeatureFactory {
 		double e = Math.sqrt(6) / Math.sqrt(fanIn + fanOut);
 
 		allVecs = SimpleMatrix.random(DIMENSIONALITY, wordToNum.keySet().size(), -1 * e, e, rand);
-		// System.out.println(allVecs);
 	}
 
 	// might be useful for word to number lookups, just access them directly in WindowModel

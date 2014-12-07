@@ -11,11 +11,7 @@ public class NER {
 	if (args.length < 2) {
 	    System.out.println("USAGE: java -cp classes NER ../data/train ../data/dev");
 	    return;
-	}	    
-
-	// this reads in the train and test datasets
-	List<Datum> trainData = FeatureFactory.readTrainData(args[0]);
-	List<Datum> testData = FeatureFactory.readTestData(args[1]);	
+	}	
 
 	int NUM_ITERATIONS = 1;
 	int WINDOW_SIZE = 3;
@@ -29,14 +25,20 @@ public class NER {
 		HIDDEN_NODES = Integer.parseInt(args[4]);
 		LEARNING_RATE = Double.parseDouble(args[5]);
 		REGULARIZE = Double.parseDouble(args[6]);
-	}
-	
+	}  
+
+	// Initialize model 
+	WindowModel model = new WindowModel(WINDOW_SIZE, HIDDEN_NODES, LEARNING_RATE, REGULARIZE, NUM_ITERATIONS);
+	model.initWeights();  
+
+	// this reads in the train and test datasets
+	List<Datum> trainData = FeatureFactory.readTrainData(args[0]);
+	List<Datum> testData = FeatureFactory.readTestData(args[1]);	
+
 	//	read the train and test data
 	FeatureFactory.initializeVocab("../data/vocab.txt");
 	
-	// Initialize model 
-	WindowModel model = new WindowModel(WINDOW_SIZE, HIDDEN_NODES, LEARNING_RATE, REGULARIZE, NUM_ITERATIONS);
-	model.initWeights();
+	
 
 	//Initialization of Word Vectors, either random or not
 	FeatureFactory.readWordVectors("../data/wordVectors.txt");
