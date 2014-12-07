@@ -41,8 +41,8 @@ public class NER {
 	
 
 	//Initialization of Word Vectors, either random or not
-	FeatureFactory.readWordVectors("../data/wordVectors.txt");
-	//FeatureFactory.initRandomWordVectors();
+	//FeatureFactory.readWordVectors("../data/wordVectors.txt");
+	FeatureFactory.initRandomWordVectors();
 
 	//Baseline
 	// model.baseLineTrain(trainData);
