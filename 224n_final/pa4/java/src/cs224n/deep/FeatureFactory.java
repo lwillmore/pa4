@@ -57,7 +57,7 @@ public class FeatureFactory {
 			String word = bits[0];
 			String label = bits[1];
 
-			datum = new Datum(word, label);
+			Datum datum = new Datum(word, label);
 			data.add(datum);
 		}
 		data.remove(data.size() - 1);
