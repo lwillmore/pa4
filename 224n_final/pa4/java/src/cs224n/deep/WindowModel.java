@@ -9,6 +9,8 @@ import java.util.Random;
 import java.text.*;
 
 public class WindowModel {
+	public static final boolean GRADIENT_CHECK_ON = false;
+
 	protected SimpleMatrix L, W, U, b1, b2;
 	public static int HIDDEN_ELEMENTS;
 	public static int C_N;
@@ -69,12 +71,14 @@ public class WindowModel {
 		SimpleMatrix gradL = gradientL(sigmoid, newM, labelVector);
 		
 		//Gradient Checks
-		// gradientCheckU(gradU, newX, labelVector);
-		// gradientCheckB2(gradb2, newX, labelVector);
-		// gradientCheckW(gradW, newX, labelVector); 
-		// gradientCheckB1(gradb1, newX, labelVector);
-		// gradientCheckL(gradL, newX, labelVector);
-		
+		if (GRADIENT_CHECK_ON){
+			gradientCheckU(gradU, newX, labelVector);
+			gradientCheckB2(gradb2, newX, labelVector);
+			gradientCheckW(gradW, newX, labelVector); 
+			gradientCheckB1(gradb1, newX, labelVector);
+			gradientCheckL(gradL, newX, labelVector);
+		}
+
 		//Apply Gradients 
 		U = U.minus(gradU.scale(alpha));
 		b2 = b2.minus(gradb2.scale(alpha));
@@ -208,7 +212,11 @@ public class WindowModel {
 				double right = (plus - minus) / (2 * epsilon);
 				double num = Math.abs(left.get(row, col) - right);
 
-				if (num > Math.pow(10, -7)){
+				double threshold = Math.pow(10, -7);
+				if (regularize){
+					threshold = 5 * Math.pow(10, -7);
+				}
+				if (num > threshold){
 					badCount++;
 				}
 				else{
@@ -217,7 +225,7 @@ public class WindowModel {
 			}
 		}
 		System.out.println("U");
-		System.out.println("GOODCOUNT (Below 10^-7): " + goodCount);
+		System.out.println("GOODCOUNT: " + goodCount);
 		System.out.println("BADCOUNT: " + badCount);
 		System.out.println("");
 	}
@@ -243,7 +251,12 @@ public class WindowModel {
 				double right = (plus - minus) / (2 * epsilon);
 				double num = Math.abs(left.get(row, col) - right);
 
-				if (num > Math.pow(10, -7)){
+				double threshold = Math.pow(10, -7);
+				if (regularize){
+					threshold = Math.pow(10, -6);
+				}
+
+				if (num > threshold){
 					badCount++;
 				}
 				else{
@@ -252,7 +265,7 @@ public class WindowModel {
 			}
 		}
 		System.out.println("B2");
-		System.out.println("GOODCOUNT (Below 10^-7): " + goodCount);
+		System.out.println("GOODCOUNT: " + goodCount);
 		System.out.println("BADCOUNT: " + badCount);
 		System.out.println("");
 	}
@@ -285,7 +298,11 @@ public class WindowModel {
 				double right = (plus - minus) / (2 * epsilon);
 				double num = Math.abs(left.get(row, col) - right);
 
-				if (num > Math.pow(10, -7)){
+				double threshold = Math.pow(10, -7);
+				if (regularize){
+					threshold = 5 * Math.pow(10, -7);
+				}
+				if (num > threshold){
 					badCount++;
 				}
 				else{
@@ -294,7 +311,7 @@ public class WindowModel {
 			}
 		}
 		System.out.println("W");
-		System.out.println("GOODCOUNT (Below 10^-7): " + goodCount);
+		System.out.println("GOODCOUNT: " + goodCount);
 		System.out.println("BADCOUNT: " + badCount);
 		System.out.println("");
 	}
@@ -327,7 +344,7 @@ public class WindowModel {
 			}
 		}
 		System.out.println("B1");
-		System.out.println("GOODCOUNT (Below 10^-7): " + goodCount);
+		System.out.println("GOODCOUNT: " + goodCount);
 		System.out.println("BADCOUNT: " + badCount);
 		System.out.println("");
 	}
@@ -360,7 +377,7 @@ public class WindowModel {
 			}
 		}
 		System.out.println("L");
-		System.out.println("GOODCOUNT (Below 10^-7): " + goodCount);
+		System.out.println("GOODCOUNT: " + goodCount);
 		System.out.println("BADCOUNT: " + badCount);
 		System.out.println("");
 	}
@@ -390,18 +407,7 @@ public class WindowModel {
 		}
 
 		SimpleMatrix finalMatrix = SoftMaxScoreWithLog(tempU.mult(newM).plus(newB2));
-		return labelVector.transpose().mult(finalMatrix).get(0, 0) + (lambda/2) * (sumSquared(W) + sumSquared(U));
-	}
-
-	//Sums elements^2 of a matrix
-	public double sumSquared(SimpleMatrix m){
-		double result = 0.0;
-		for (int i = 0; i < m.numRows(); i++){
-			for (int j = 0; j < m.numCols(); j++){
-				result += Math.pow(m.get(i, j), 2);
-			}
-		}
-		return result;
+		return labelVector.transpose().mult(finalMatrix).get(0, 0) + (lambda/2) * (W.normF() + U.normF());
 	}
 
 	//Calculates softmax score of the matrix V with log
