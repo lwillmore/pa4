@@ -5,7 +5,6 @@ import java.io.*;
 
 import org.ejml.simple.SimpleMatrix;
 
-
 public class NER {
     public static void main(String[] args) throws IOException {
 	if (args.length < 2) {
@@ -38,11 +37,9 @@ public class NER {
 	//	read the train and test data
 	FeatureFactory.initializeVocab("../data/vocab.txt");
 	
-	
-
 	//Initialization of Word Vectors, either random or not
-	//FeatureFactory.readWordVectors("../data/wordVectors.txt");
-	FeatureFactory.initRandomWordVectors();
+	FeatureFactory.readWordVectors("../data/wordVectors.txt");
+	//FeatureFactory.initRandomWordVectors();
 
 	//Baseline
 	// model.baseLineTrain(trainData);

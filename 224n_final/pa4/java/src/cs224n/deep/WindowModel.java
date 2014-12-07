@@ -26,22 +26,22 @@ public class WindowModel {
 	public WindowModel(int _windowSize, int _hiddenSize, double _lr, double regularize, int NUM_ITERATIONS) {
 		WINDOW_SIZE = _windowSize;
 		HIDDEN_ELEMENTS = _hiddenSize;
-		alpha = _lr; //Learning Rate
+		alpha = _lr; 
 		if (regularize > 0.0){
 			this.regularize = true;
 			lambda = regularize;
 		}
 		NUM_ITERS = NUM_ITERATIONS;
 	}
-	
+
 	public void initWeights(){
-		// initialize with bias inside as the last column
+		/* initialize with bias inside as the last column*/
 		C_N = N * WINDOW_SIZE;
 		double fanIn = C_N;
 		double fanOut = HIDDEN_ELEMENTS;
 		double e = Math.sqrt(6) / Math.sqrt(fanIn + fanOut);
 
-		//Random initialization
+		/*Random initialization*/
 		Random rand = new Random();
 		W = SimpleMatrix.random(HIDDEN_ELEMENTS, C_N, -1 * e, e, rand);
 		U = SimpleMatrix.random(NUM_FEATURES, HIDDEN_ELEMENTS, -1 * e, 1 * e, rand);
@@ -50,10 +50,10 @@ public class WindowModel {
 	}
 
 	public void feedForwardAndBackward(SimpleMatrix newX, SimpleMatrix labelVector, List<Integer> wordListIndex){
-		//Forward Propagation
+		/*Forward Propagation*/
 		SimpleMatrix m = W.mult(newX).plus(b1);
 		SimpleMatrix newM = new SimpleMatrix(HIDDEN_ELEMENTS, 1);
-		
+
 		for (int i = 0; i < HIDDEN_ELEMENTS; i++){
 			newM.set(i, 0, Math.tanh(m.get(i, 0)));
 		}
@@ -61,16 +61,16 @@ public class WindowModel {
 		SimpleMatrix sigmoid = SoftMaxScore(finalMatrix);
 
 
-		//Back propagation
+		/*Back propagation*/
 		SimpleMatrix gradU = gradientU(sigmoid, newM, labelVector);
 		SimpleMatrix gradb2 = gradientB2(sigmoid, labelVector);
-		
+
 
 		SimpleMatrix gradW = gradientW(sigmoid, newX, newM, labelVector);
 		SimpleMatrix gradb1 = gradientB1(sigmoid, m, labelVector);
 		SimpleMatrix gradL = gradientL(sigmoid, newM, labelVector);
-		
-		//Gradient Checks
+
+		/*Gradient Checks*/
 		if (GRADIENT_CHECK_ON){
 			gradientCheckU(gradU, newX, labelVector);
 			gradientCheckB2(gradb2, newX, labelVector);
@@ -79,13 +79,13 @@ public class WindowModel {
 			gradientCheckL(gradL, newX, labelVector);
 		}
 
-		//Apply Gradients 
+		/*Apply Gradients */
 		U = U.minus(gradU.scale(alpha));
 		b2 = b2.minus(gradb2.scale(alpha));
 		W = W.minus(gradW.scale(alpha));
 		b1 = b1.minus(gradb1.scale(alpha));
 
-		//Update L
+		/*Update L*/
 		for (int i = 0; i < wordListIndex.size(); i++){
 			int column = wordListIndex.get(i);
 			SimpleMatrix gradL_x = gradL.extractMatrix(i * N, (i+1) * N, 0, 1);
@@ -98,12 +98,7 @@ public class WindowModel {
 		}
 	}
 
-	///////////////////////////////////////////////////////////////////////////////////////////////////
-	/**
-	*Gradient Calculation / Checks
-	*/
-
-	//Calculates the gradient of U
+	/*Calculates the gradient of U*/
 	public SimpleMatrix gradientU(SimpleMatrix p, SimpleMatrix h, SimpleMatrix labelVector){
 		SimpleMatrix du = (p.minus(labelVector)).mult(h.transpose());
 		if (regularize){
@@ -114,24 +109,24 @@ public class WindowModel {
 		}
 	}
 
-	//Calculates the gradient of b2
+	/*Calculates the gradient of b2 */
 	public SimpleMatrix gradientB2(SimpleMatrix p, SimpleMatrix labelVector){
 		SimpleMatrix du = p.minus(labelVector);
 		return du;
 	}
 
-	//Calculates the gradient of W
+	/*Calculates the gradient of W */
 	public SimpleMatrix gradientW(SimpleMatrix p, SimpleMatrix x, SimpleMatrix newM, SimpleMatrix labelVector){
 		SimpleMatrix a = U.transpose().mult(p.minus(labelVector));
 		SimpleMatrix b = new SimpleMatrix(HIDDEN_ELEMENTS, 1);
-		
+
 		for (int i = 0; i < a.numRows(); i++){
 			double temp = 1 - Math.pow(newM.get(i,0),2);
 			b.set(i, 0, temp);
 		}
 		SimpleMatrix finalMatrix = new SimpleMatrix(HIDDEN_ELEMENTS, 1);
-		
-		//Element-wise multiplication
+
+		/*Element-wise multiplication */
 		for (int i = 0; i < a.numRows(); i++){
 			finalMatrix.set(i,0,a.get(i, 0) * b.get(i, 0));
 		}
@@ -144,7 +139,7 @@ public class WindowModel {
 		}
 	}
 
-	//Calculates the gradient of B1
+	/*Calculates the gradient of B1 */
 	public SimpleMatrix gradientB1(SimpleMatrix p, SimpleMatrix m, SimpleMatrix labelVector){
 		SimpleMatrix a = U.transpose().mult(p.minus(labelVector));
 		SimpleMatrix b = new SimpleMatrix(HIDDEN_ELEMENTS, 1);
@@ -154,26 +149,26 @@ public class WindowModel {
 			b.set(i, 0, temp);
 		}
 		SimpleMatrix finalMatrix = new SimpleMatrix(HIDDEN_ELEMENTS, 1);
-		
-		//Element-wise multiplication
+
+		/*Element-wise multiplication */
 		for (int i = 0; i < a.numRows(); i++){
 			finalMatrix.set(i,0,a.get(i, 0) * b.get(i, 0));
 		}
 		return finalMatrix;
 	}
 
-	//Calculate Gradient of L
+	/*Calculate Gradient of L */
 	public SimpleMatrix gradientL(SimpleMatrix p, SimpleMatrix newM, SimpleMatrix labelVector){
 		SimpleMatrix a = U.transpose().mult(p.minus(labelVector));
 		SimpleMatrix b = new SimpleMatrix(HIDDEN_ELEMENTS, 1);
-		
+
 		for (int i = 0; i < a.numRows(); i++){
 			double temp = 1 - Math.pow(newM.get(i,0),2);
 			b.set(i, 0, temp);
 		}
 		SimpleMatrix finalMatrix = new SimpleMatrix(HIDDEN_ELEMENTS, 1);
-		
-		//Element-wise multiplication
+
+		/*Element-wise multiplication */
 		for (int i = 0; i < a.numRows(); i++){
 			finalMatrix.set(i,0,a.get(i, 0) * b.get(i, 0));
 		}
@@ -181,13 +176,10 @@ public class WindowModel {
 		return W.transpose().mult(finalMatrix);
 	}
 
-
-	//Gradient Checks
-
-	//Grad Check U
+	/*Grad Check U*/
 	public void gradientCheckU(SimpleMatrix gradU, SimpleMatrix newX, SimpleMatrix labelVector){
 		SimpleMatrix left = gradU;
-		
+
 		int goodCount = 0;
 		int badCount = 0;
 		for (int row = 0; row < U.numRows(); row++){
@@ -230,10 +222,10 @@ public class WindowModel {
 		System.out.println("");
 	}
 
-	//Grad Check B2
+	/*Grad Check B2*/
 	public void gradientCheckB2(SimpleMatrix gradB2, SimpleMatrix newX, SimpleMatrix labelVector){
 		SimpleMatrix left = gradB2;
-		
+
 		int goodCount = 0;
 		int badCount = 0;
 
@@ -270,7 +262,7 @@ public class WindowModel {
 		System.out.println("");
 	}
 
-	//Grad Check W
+	/*Grad Check W*/
 	public void gradientCheckW(SimpleMatrix gradW, SimpleMatrix newX, SimpleMatrix labelVector){
 		SimpleMatrix left = gradW;
 		int goodCount = 0;
@@ -316,7 +308,7 @@ public class WindowModel {
 		System.out.println("");
 	}
 
-	//Grad Check B1
+	/*Grad Check B1*/
 	public void gradientCheckB1(SimpleMatrix gradB1, SimpleMatrix newX, SimpleMatrix labelVector){
 		int goodCount = 0;
 		int badCount = 0;
@@ -349,7 +341,7 @@ public class WindowModel {
 		System.out.println("");
 	}
 
-	//Grad Check B1
+	/*Grad Check B1*/
 	public void gradientCheckL(SimpleMatrix gradL, SimpleMatrix newX, SimpleMatrix labelVector){
 		int goodCount = 0;
 		int badCount = 0;
@@ -382,12 +374,11 @@ public class WindowModel {
 		System.out.println("");
 	}
 
-	//Prediction for the gradient check
+	/*Prediction for the gradient check*/
 	public SimpleMatrix gradientHelper(SimpleMatrix newX, SimpleMatrix tempU, SimpleMatrix tempW, SimpleMatrix labelVector, SimpleMatrix newB1, SimpleMatrix newB2){
-		//Forward Propagation
 		SimpleMatrix m = tempW.mult(newX).plus(newB1);
 		SimpleMatrix newM = new SimpleMatrix(HIDDEN_ELEMENTS, 1);
-		
+
 		for (int i = 0; i < HIDDEN_ELEMENTS; i++){
 			newM.set(i, 0, Math.tanh(m.get(i, 0)));
 		}
@@ -396,12 +387,12 @@ public class WindowModel {
 		return labelVector.transpose().mult(finalMatrix);
 	}
 
-	//Prediction for the gradient check (Regularized)
+	/*Prediction for the gradient check (Regularized)*/
 	public double gradientHelperRegularized(SimpleMatrix newX, SimpleMatrix tempU, SimpleMatrix tempW, SimpleMatrix labelVector, SimpleMatrix newB1, SimpleMatrix newB2){
-		//Forward Propagation
+
 		SimpleMatrix m = tempW.mult(newX).plus(newB1);
 		SimpleMatrix newM = new SimpleMatrix(HIDDEN_ELEMENTS, 1);
-		
+
 		for (int i = 0; i < HIDDEN_ELEMENTS; i++){
 			newM.set(i, 0, Math.tanh(m.get(i, 0)));
 		}
@@ -410,7 +401,7 @@ public class WindowModel {
 		return labelVector.transpose().mult(finalMatrix).get(0, 0) + (lambda/2) * (W.normF() + U.normF());
 	}
 
-	//Calculates softmax score of the matrix V with log
+	/*Calculates softmax score of the matrix V with log*/
 	public SimpleMatrix SoftMaxScoreWithLog(SimpleMatrix v){
 		double denominator = 0.0;
 		for (int i = 0; i < v.numRows(); i++){
@@ -423,9 +414,7 @@ public class WindowModel {
 		return g;
 	}
 
-	///////////////////////////////////////////////////////////////////////////////////////////////////
-
-	//Calculates softmax score of the matrix V
+	/*Calculates softmax score of the matrix V */
 	public SimpleMatrix SoftMaxScore(SimpleMatrix v){
 		double denominator = 0.0;
 		for (int i = 0; i < v.numRows(); i++){
@@ -438,7 +427,7 @@ public class WindowModel {
 		return g;
 	}
 
-	//Creates dictionarys used for creating the label vector
+	/*Creates dictionarys used for creating the label vector */
 	HashMap<String, Integer> dict; 
 	HashMap<Integer, String> reverseDict;
 	public void createDicts(){
@@ -453,16 +442,14 @@ public class WindowModel {
 		}
 	}
 
-	//Train method
+	/*Train method*/
 	public void train(List<Datum> _trainData){
 		for (int iters = 0; iters < NUM_ITERS; iters++){
 			createDicts();
 
 			for (int i = WINDOW_SIZE / 2; i < _trainData.size()-(WINDOW_SIZE / 2); i++){
-			//Don't use if beginning or end of sentence
-				if (_trainData.get(i).equals("<s>") || _trainData.get(i).equals("</s>") ) continue;
 
-			// System.out.println("" + i + " / " + (_trainData.size() - (WINDOW_SIZE / 2)) + "done");
+				if (_trainData.get(i).word.equals("<s>") || _trainData.get(i).word.equals("</s>") ) continue;
 				SimpleMatrix newX = new SimpleMatrix(C_N, 1);
 
 				int count = 0;
@@ -472,33 +459,32 @@ public class WindowModel {
 				for (int j = startIndex; j <= i + (WINDOW_SIZE / 2); j++){
 					Datum elem = _trainData.get(j);
 
-				//Get word vector
+
 					String word = elem.word.toLowerCase();
 					int columnIndex = 0;
 					if (FeatureFactory.wordToNum.keySet().contains(word)){
 						columnIndex = FeatureFactory.wordToNum.get(word);
 					}
 					else{
-					//Word not in vocabulary, but may contain digits
+						/*Word not in vocabulary, but may contain digits*/
 						word = word.replaceAll("\\d", "DG".toLowerCase());
 						if (FeatureFactory.wordToNum.keySet().contains(word)){
 							columnIndex = FeatureFactory.wordToNum.get(word);
 						}
 						else{
-						//Doesn't contain digits or isn't known with replacement
-						columnIndex = FeatureFactory.wordToNum.get("UUUNKKK".toLowerCase()); //TODO: Check that this works, converting to lower case
+							/*Doesn't contain digits or isn't known with replacement*/
+							columnIndex = FeatureFactory.wordToNum.get("UUUNKKK".toLowerCase());
+						}
+					}
+
+					wordListIndex.add(columnIndex);
+					SimpleMatrix a = FeatureFactory.allVecs.extractVector(false, columnIndex);
+
+					for (int x = 0; x < N; x++){
+						newX.set(count, 0, a.get(x, 0));
+						count++;
 					}
 				}
-
-				wordListIndex.add(columnIndex);
-				SimpleMatrix a = FeatureFactory.allVecs.extractVector(false, columnIndex);
-
-				for (int x = 0; x < N; x++){
-					newX.set(count, 0, a.get(x, 0));
-					count++;
-				}
-
-				//Get correct label
 				SimpleMatrix labelVector = new SimpleMatrix(NUM_FEATURES, 1);
 				String label = _trainData.get(i).label;
 				labelVector.set(dict.get(label), 0, 1);
@@ -507,37 +493,33 @@ public class WindowModel {
 			}
 		}
 	}
-}
-public void test(List<Datum> testData){
-	for (int i = WINDOW_SIZE / 2; i < testData.size()-(WINDOW_SIZE / 2); i++){
-			//Don't use if beginning or end of sentence
-		if (testData.get(i).equals("<s>") || testData.get(i).equals("</s>") ) continue;
+	public void test(List<Datum> testData){
+		for (int i = WINDOW_SIZE / 2; i < testData.size()-(WINDOW_SIZE / 2); i++){
+			if (testData.get(i).word.equals("<s>") || testData.get(i).word.equals("</s>") ) continue;
 
-			// System.out.println("" + i + " / " + (testData.size() - (WINDOW_SIZE / 2)) + "done");
-		SimpleMatrix newX = new SimpleMatrix(C_N, 1);
+			SimpleMatrix newX = new SimpleMatrix(C_N, 1);
 
-		int count = 0;
-		List<Integer> wordListIndex = new ArrayList<Integer>();
+			int count = 0;
+			List<Integer> wordListIndex = new ArrayList<Integer>();
 
-		int startIndex = i - (WINDOW_SIZE / 2);
-		for (int j = startIndex; j <= i + (WINDOW_SIZE / 2); j++){
-			Datum elem = testData.get(j);
+			int startIndex = i - (WINDOW_SIZE / 2);
+			for (int j = startIndex; j <= i + (WINDOW_SIZE / 2); j++){
+				Datum elem = testData.get(j);
 
-				//Get word vector
-			String word = elem.word.toLowerCase();
-			int columnIndex = 0;
-			if (FeatureFactory.wordToNum.keySet().contains(word)){
-				columnIndex = FeatureFactory.wordToNum.get(word);
-			}
-			else{
-					//Word not in vocabulary, but may contain digits
-				word = word.replaceAll("\\d", "DG".toLowerCase());
+				String word = elem.word.toLowerCase();
+				int columnIndex = 0;
 				if (FeatureFactory.wordToNum.keySet().contains(word)){
 					columnIndex = FeatureFactory.wordToNum.get(word);
 				}
 				else{
-						//Doesn't contain digits or isn't known with replacement
-						columnIndex = FeatureFactory.wordToNum.get("UUUNKKK".toLowerCase()); //TODO: Check that this works, converting to lower case
+					/*Word not in vocabulary, but may contain digits*/
+					word = word.replaceAll("\\d", "DG".toLowerCase());
+					if (FeatureFactory.wordToNum.keySet().contains(word)){
+						columnIndex = FeatureFactory.wordToNum.get(word);
+					}
+					else{
+						/*Doesn't contain digits or isn't known with replacement*/
+						columnIndex = FeatureFactory.wordToNum.get("UUUNKKK".toLowerCase());
 					}
 				}
 
@@ -550,7 +532,7 @@ public void test(List<Datum> testData){
 				}
 			}
 
-			//Get correct label
+			/*Get correct label*/
 			SimpleMatrix labelVector = new SimpleMatrix(NUM_FEATURES, 1);
 			String correctLabel = testData.get(i).label;
 			String word = testData.get(i).word;
@@ -572,12 +554,12 @@ public void test(List<Datum> testData){
 		}
 	}
 
-	//Prediction for test function
+	/*Prediction for test function*/
 	public SimpleMatrix predict(SimpleMatrix newX){
-		//Forward Propagation
+		/*Forward Propagation*/
 		SimpleMatrix m = W.mult(newX).plus(b1);
 		SimpleMatrix newM = new SimpleMatrix(HIDDEN_ELEMENTS, 1);
-		
+
 		for (int i = 0; i < HIDDEN_ELEMENTS; i++){
 			newM.set(i, 0, Math.tanh(m.get(i, 0)));
 		}
@@ -586,53 +568,53 @@ public void test(List<Datum> testData){
 		return SoftMaxScore(finalMatrix);
 	}
 
-	/*
-	* Baseline Implementaiton
-	*/
-	HashMap<String, HashMap<String, Integer>> baseLineMap = new HashMap<String, HashMap<String, Integer>>();
-	public void baseLineTrain(List<Datum> _trainData){
-		for (Datum d : _trainData){
-			String word = d.word;
-			String label = d.label;
-			if (baseLineMap.get(word) != null){
-				HashMap<String, Integer> tagMap = baseLineMap.get(word);
-				if(tagMap.get(label) != null){
-					int count = tagMap.get(label);
-					tagMap.put(label, count + 1);
-				}
-				else{
-					tagMap.put(label, 1);
-				}
+/*
+* Baseline Implementaiton
+*/
+HashMap<String, HashMap<String, Integer>> baseLineMap = new HashMap<String, HashMap<String, Integer>>();
+public void baseLineTrain(List<Datum> _trainData){
+	for (Datum d : _trainData){
+		String word = d.word;
+		String label = d.label;
+		if (baseLineMap.get(word) != null){
+			HashMap<String, Integer> tagMap = baseLineMap.get(word);
+			if(tagMap.get(label) != null){
+				int count = tagMap.get(label);
+				tagMap.put(label, count + 1);
 			}
 			else{
-				HashMap<String, Integer> tagMap = new HashMap<String, Integer>();
 				tagMap.put(label, 1);
-				baseLineMap.put(word, tagMap);
 			}
 		}
+		else{
+			HashMap<String, Integer> tagMap = new HashMap<String, Integer>();
+			tagMap.put(label, 1);
+			baseLineMap.put(word, tagMap);
+		}
 	}
+}
 
-	public void baseLineTest(List<Datum> testData){
-		for (Datum d : testData){
-			String word = d.word;
-			String label = d.label;
-			if(baseLineMap.keySet().contains(d.word)){
-				//Object has been seen
-				Set<String> nerTags = baseLineMap.get(d.word).keySet();
-				int largest = -1;
-				String finalTag = "";
-				for (String tag : nerTags){
-					if (baseLineMap.get(d.word).get(tag) > largest){
-						largest = baseLineMap.get(d.word).get(tag);
-						finalTag = tag;
-					}
+public void baseLineTest(List<Datum> testData){
+	for (Datum d : testData){
+		String word = d.word;
+		String label = d.label;
+		if(baseLineMap.keySet().contains(d.word)){
+			/*Object has been seen*/
+			Set<String> nerTags = baseLineMap.get(d.word).keySet();
+			int largest = -1;
+			String finalTag = "";
+			for (String tag : nerTags){
+				if (baseLineMap.get(d.word).get(tag) > largest){
+					largest = baseLineMap.get(d.word).get(tag);
+					finalTag = tag;
 				}
-				System.out.println(word + "\t" + label + "\t" + finalTag);
 			}
-			else{
-				//Object hasn't been seen, use O
-				System.out.println(word + "\t" + label + "\t" + "O");
-			}
+			System.out.println(word + "\t" + label + "\t" + finalTag);
+		}
+		else{
+			/*Object hasn't been seen, use O*/
+			System.out.println(word + "\t" + label + "\t" + "O");
 		}
 	}
+}
 }

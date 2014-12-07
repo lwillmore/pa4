@@ -21,7 +21,7 @@ public class FeatureFactory {
 		if (trainData==null) trainData = read(filename);
 		return trainData;
 	}
-	
+
 	static List<Datum> testData;
 	/** Do not modify this method **/
 	public static List<Datum> readTestData(String filename) throws IOException {
@@ -30,17 +30,17 @@ public class FeatureFactory {
 	}
 
 
-	//Method modified to include sentence boundaries
+	/*Method modified to include sentence boundaries*/
 	private static List<Datum> read(String filename)
 	throws FileNotFoundException, IOException {
 		List<Datum> data = new ArrayList<Datum>();
 		BufferedReader in = new BufferedReader(new FileReader(filename));
-		
+
 		for (int i = 0; i <(WindowModel.WINDOW_SIZE/2); i++){
 			Datum datum = new Datum(START_TOKEN, "O");
 			data.add(datum);
 		}
-		
+
 		for (String line = in.readLine(); line != null; line = in.readLine()) {
 			if (line.trim().length() == 0) {
 				for (int i = 0; i <(WindowModel.WINDOW_SIZE/2); i++){
@@ -65,9 +65,9 @@ public class FeatureFactory {
 	}
 
 	static final int DIMENSIONALITY = 50;
-	// Look up table matrix with all word vectors as defined in lecture with dimensionality n x |V|
-	static SimpleMatrix allVecs; //access it directly in WindowModel
-	
+	/*Look up table matrix with all word vectors as defined in lecture with dimensionality n x |V| */
+	static SimpleMatrix allVecs; 
+
 	public static SimpleMatrix readWordVectors(String vecFilename) throws IOException {
 		if (allVecs!=null) return allVecs;
 
@@ -98,7 +98,6 @@ public class FeatureFactory {
 		allVecs = SimpleMatrix.random(DIMENSIONALITY, wordToNum.keySet().size(), -1 * e, e, rand);
 	}
 
-	// might be useful for word to number lookups, just access them directly in WindowModel
 	public static HashMap<String, Integer> wordToNum = new HashMap<String, Integer>(); 
 	public static HashMap<Integer, String> numToWord = new HashMap<Integer, String>();
 
